@@ -52,6 +52,9 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	//AWS Java sdk for amazon S3
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.767'
 }
 
 tasks.named('test') {
