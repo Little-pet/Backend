@@ -95,19 +95,38 @@ public class SecurityConfig {
 
                 );
 
-        http
-                .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers(
-                                "/",
-                                "/docs/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/oauth2/authorization/**",
-                                "/login/oauth2/code/**",
-                                "/login",
-                                "/api/**"
-                        ).permitAll());
-                        //.anyRequest().authenticated());
+//        http
+//                .authorizeHttpRequests((auth) -> auth
+//                        .requestMatchers(
+//                                "/",
+//                                "/docs/**",
+//                                "/v3/api-docs/**",
+//                                "/swagger-ui/**",
+//                                "/oauth2/authorization/**",
+//                                "/login/oauth2/code/**",
+//                                "/login",
+//                                "/api/**"
+//                        ).permitAll()
+//                                // /pet-register 경로는 로그인한 사용자만 접근 가능하게 설정
+//                        .requestMatchers("/pet-register").authenticated()
+//                                // 나머지 모든 요청은 인증 필요 (필요에 따라 조정)
+//                        .anyRequest().authenticated());
+//                        //.anyRequest().authenticated());
+
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/pet-register").authenticated() // /pet-register는 인증 필요
+                .requestMatchers(
+                        "/",
+                        "/docs/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/oauth2/authorization/**",
+                        "/login/oauth2/code/**",
+                        "/login",
+                        "/api/**"
+                ).permitAll()  // 나머지 명시된 URL은 인증 없이 접근 가능
+                .anyRequest().authenticated() // 위에 명시하지 않은 모든 요청은 인증 필요
+        );
 
         http.sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

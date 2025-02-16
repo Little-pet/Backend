@@ -4,9 +4,9 @@ import LittlePet.UMC.User.dto.Login.CustomOAuth2User;
 import LittlePet.UMC.User.jwt.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
@@ -25,19 +25,18 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+            throws IOException, ServletException {
         System.out.println("[DEBUG] Authentication success for user: " + authentication.getName());
 
         try {
             // 사용자 정보 가져오기
             Object principal = authentication.getPrincipal();
-
             String socialId;
             String role = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .findFirst()
                     .orElse("USER"); // 기본 권한
-
 
             if (principal instanceof CustomOAuth2User) {
                 // Naver 처리
@@ -53,50 +52,39 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 throw new IllegalArgumentException("[ERROR] Unsupported principal type: " + principal.getClass().getName());
             }
 
-
-
             System.out.println("[DEBUG] Social ID: " + socialId);
             System.out.println("[DEBUG] Role: " + role);
 
-
-            // JWT 생성
-            String token = jwtUtil.createJwt(socialId, role, 60 * 60 * 24 * 1000L); // 1일 유효
+            // JWT 생성 (1일 유효)
+            String token = jwtUtil.createJwt(socialId, role, 60 * 60 * 24 * 1000L);
             System.out.println("[DEBUG] Generated JWT: " + token);
 
-            // JWT를 쿠키에 추가
-            Cookie jwtCookie = createCookie("Authorization", token);
-            response.addCookie(jwtCookie);
-            System.out.println("[DEBUG] JWT cookie added: " + jwtCookie.getValue());
-
-            String setCookieHeader = response.getHeader("Set-Cookie");
-            // "Authorization=xxxx; Path=/; HttpOnly; Max-Age=86400"
-
-            setCookieHeader = setCookieHeader + "; SameSite=None";
-            response.setHeader("Set-Cookie", setCookieHeader);
-
-//            response.setHeader("Set-Cookie",
-//                    "Authorization=" + token + "; Path=/; HttpOnly; Secure; SameSite=None");
+            // JWT를 쿠키에 추가 (쿠키 이름을 "jwt"로 변경)
+            ResponseCookie jwtCookie = createResponseCookie("jwt", token);
+            response.addHeader("Set-Cookie", jwtCookie.toString());
+            System.out.println("[DEBUG] JWT cookie added: " + token);
 
             // 클라이언트로 리다이렉트
-            response.sendRedirect("http://localhost:5173/");
+            response.sendRedirect("https://umclittlepet.shop/");
         } catch (ExpiredJwtException e) {
             System.err.println("[ERROR] JWT expired. Refreshing token...");
-            //handleExpiredJwt(response, authentication);
+            // handleExpiredJwt(response, authentication);
         } catch (Exception e) {
             System.err.println("[ERROR] Authentication error: " + e.getMessage());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
         }
     }
 
-    private Cookie createCookie(String key, String value) {
-        Cookie cookie = new Cookie(key, value);
-        cookie.setMaxAge(60 * 60 * 24); // 1일
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);// JavaScript에서 접근 금지
-        cookie.setPath("/");
-//        cookie.setDomain("localhost"); // Domain 설정
-
-        System.out.println("[DEBUG] Created cookie: " + key + " = " + value);// 모든 경로에서 쿠키 사용 가능
-        return cookie;
+    /**
+     * ResponseCookie를 사용해 쿠키 생성
+     */
+    private ResponseCookie createResponseCookie(String key, String value) {
+        return ResponseCookie.from(key, value)
+                .maxAge(60 * 60 * 24)   // 1일
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("None")       // cross-site 요청을 위해 필요
+                .build();
     }
 }
