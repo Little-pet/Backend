@@ -89,3 +89,4 @@ cloud:
 kakao:
   api:
     key: ${KAKAO_REST_API_KEY}  # 카카오 개발자 사이트에서 발급받은 REST API 키 또는 JavaScript 키
+g
