@@ -34,7 +34,6 @@ spring:
             authorization-grant-type: authorization_code
             scope:
               - name
-              - email
           google:
             client-name: google
             client-id: ${GOOGLE_CLIENT_ID}
